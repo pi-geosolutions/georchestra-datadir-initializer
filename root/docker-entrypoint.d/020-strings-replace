@@ -1,0 +1,78 @@
+#!/bin/bash
+set -e
+
+sleep 5
+cd $DEST_DIR
+
+#######################
+# String replacements
+#######################
+# Load file_env script to allow passing sensitive data through secrets
+# e.g. SLAPD_PASSWORD_FILE will be used to feed SLAPD_PASSWORD with the content
+# of the file pointed by SLAPD_PASSWORD_FILE
+source /docker-entrypoint.d/utils/file_env.sh
+# file_env 'SLAPD_PASSWORD'
+
+echo "proceeding to string replacements"
+#
+# # Replace scheme if set
+# if [ ! -z "$HTTP_SCHEME" ]; then
+#  sed -i "s|scheme=.*|scheme=${HTTP_SCHEME}|" default.properties
+# fi
+
+# Replace FQDN if set
+if [ ! -z "$GEORCHESTRA_FQDN" ]; then
+  # geOrchestra <= docker-20.1
+  find ./ -type f -exec sed -i "s|georchestra.mydomain.org|${GEORCHESTRA_FQDN}|" {} \;
+  # geOrchestra > docker-20.1, docker-master
+  find ./ -type f -exec sed -i "s|georchestra-127-0-1-1.traefik.me|${GEORCHESTRA_FQDN}|" {} \;
+
+ # security proxy redirection for /
+ # fixes some issues in http -> https redirection  + skips one redirection step
+ # sed -i "s|defaultTarget=.*|defaultTarget=https://${GEORCHESTRA_FQDN}/home|g" security-proxy/security-proxy.properties
+fi
+
+if [ ! -z "$PGSQL_HOST" ]; then
+ find ./ -type f -exec sed -i "s|pgsqlHost=.*|pgsqlHost=${PGSQL_HOST}|" {} \;
+ sed -i "s|jdbc.host=.*|jdbc.host=$PGSQL_HOST|" geonetwork/geonetwork.properties
+ # TODO: add support for a different geonetwork user DB password
+fi
+
+if [ ! -z "$LDAP_HOST" ]; then
+ find ./ -type f -exec sed -i "s|ldapHost=.*|ldapHost=${LDAP_HOST}|" {} \;
+ sed -i "s|ldap.url=.*|ldap.url=ldap://${LDAP_HOST}:389|" geonetwork/geonetwork.properties
+fi
+
+if [ ! -z "$SMTP_HOST" ]; then
+ find ./ -type f -exec sed -i "s|smtpHost=.*|smtpHost=${SMTP_HOST}|" {} \;
+fi
+
+# Allow secrets usage by GEOSERVER_PRIVILEGED_USER_PASSWORD variable
+file_env 'GEOSERVER_PRIVILEGED_USER_PASSWORD'
+if [ ! -z "$GEOSERVER_PRIVILEGED_USER_PASSWORD" ]; then
+ find ./ -type f -exec sed -i "s|gerlsSnFd6SmM|${GEOSERVER_PRIVILEGED_USER_PASSWORD}|" {} \;
+fi
+
+# Allow secrets usage by LDAPADMIN_PASSWORD variable
+file_env 'LDAPADMIN_PASSWORD'
+if [ ! -z "$LDAPADMIN_PASSWORD" ]; then
+ sed -i "s|ldapAdminPassword=.*|ldapAdminPassword=${LDAPADMIN_PASSWORD}|" default.properties
+ sed -i "s|ldap.security.credentials=.*|ldap.security.credentials=${LDAPADMIN_PASSWORD}|" geonetwork/geonetwork.properties
+fi
+
+# Allow secrets usage by PGSQL_ADMIN_PASSWORD_FILE variable
+file_env 'PGSQL_ADMIN_PASSWORD'
+if [ ! -z "$PGSQL_ADMIN_PASSWORD" ]; then
+ sed -i "s|pgsqlPassword=.*|pgsqlPassword=${PGSQL_ADMIN_PASSWORD}|" default.properties
+fi
+
+# Allow secrets usage by RECAPTCHA_PRIVATE_KEY variable
+file_env 'RECAPTCHA_PRIVATE_KEY'
+if [ ! -z "$RECAPTCHA_PRIVATE_KEY" ]; then
+ sed -i "s|privateKey=.*|privateKey=${RECAPTCHA_PRIVATE_KEY}|" console/console.properties
+fi
+
+echo "GeOrchestra datadir (config) folder ready"
+
+# debug command. TODO: remove when on production
+cat $DEST_DIR/default.properties

@@ -1,0 +1,25 @@
+FROM alpine
+
+LABEL project="georchestra.org"
+LABEL org.opencontainers.image.authors="jeanpommier@pi-geosolutions.fr"
+
+#install ssh server + system utilities
+RUN apk add   bash \
+              git
+
+ENV GEORCHESTRA_FQDN georchestra.mydomain.org
+ENV DEST_DIR /mnt/georchestra_datadir
+ENV GIT_REPO https://github.com/georchestra/datadir.git
+ENV GIT_BRANCH docker-master
+#ENV GEOSERVER_PRIVILEGED_USER_PASSWORD_FILE
+#SLAPD_PASSWORD_FILE
+#ENV GIT_TOKEN
+#ENV HTTP_SCHEME http
+#ENV RECAPTCHA_PRIVATE_KEY
+#ENV RESET_GEORCHESTRA_DATADIR
+
+COPY root /
+RUN chmod +x /entrypoint.sh &&\
+    chmod +x /docker-entrypoint.d/*
+
+ENTRYPOINT ["/entrypoint.sh"]

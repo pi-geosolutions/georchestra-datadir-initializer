@@ -1,0 +1,28 @@
+#!/bin/bash
+set -e
+
+if [ "$RESET_GEORCHESTRA_DATADIR" = true ]
+then
+    echo "RESET_GEORCHESTRA_DATADIR=true : Clearing the datadir before retrieving a brand new one from git repo"
+    cd $DEST_DIR
+    #rm -rf !(.|..)
+   rm -rf $DEST_DIR/* $DEST_DIR/.g* # generates errors
+fi
+
+# Create the folder if it does not exist
+mkdir -p $DEST_DIR
+
+if [ -z "$(ls -A $DEST_DIR)" ]; then
+   echo "GeOrchestra datadir ($DEST_DIR) is empty. Initializing from remote git repository $GIT_REPO"
+   # Allow secrets usage by GIT_TOKEN_FILE variable
+   source /docker-entrypoint.d/utils/file_env.sh
+   file_env 'GIT_TOKEN'
+
+   # expand variables in the GIT_REPO env. variable
+   # (e.g. https://gitlab-ci-token:${GIT_TOKEN}@gitlab.com/pi-geosolutions/sk_georchestra_config)
+   GIT_REPO=`eval "echo $GIT_REPO"`
+   echo "cloning $GIT_REPO"
+   cd $DEST_DIR
+   git clone --branch $GIT_BRANCH $GIT_REPO .
+   echo "cloned $GIT_REPO"
+fi
