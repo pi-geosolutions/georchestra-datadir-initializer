@@ -7,7 +7,7 @@ LABEL org.opencontainers.image.authors="jeanpommier@pi-geosolutions.fr"
 RUN apk add   bash \
               git
 
-ENV GEORCHESTRA_FQDN georchestra.mydomain.org
+ENV GEORCHESTRA_FQDN 
 ENV DEST_DIR /mnt/georchestra_datadir
 ENV GIT_REPO https://github.com/georchestra/datadir.git
 ENV GIT_BRANCH docker-master
