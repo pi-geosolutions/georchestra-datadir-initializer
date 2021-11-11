@@ -27,6 +27,9 @@ if [ ! -z "$GEORCHESTRA_FQDN" ]; then
   # geOrchestra > docker-20.1, docker-master
   find ./ -type f -exec sed -i "s|georchestra-127-0-1-1.traefik.me|${GEORCHESTRA_FQDN}|" {} \;
 
+  if [ ! -z "$REPLACE_THIS_FQDN" ]; then
+    find ./ -type f -exec sed -i "s|$REPLACE_THIS_FQDN|${GEORCHESTRA_FQDN}|" {} \;
+  fi
  # security proxy redirection for /
  # fixes some issues in http -> https redirection  + skips one redirection step
  # sed -i "s|defaultTarget=.*|defaultTarget=https://${GEORCHESTRA_FQDN}/home|g" security-proxy/security-proxy.properties
